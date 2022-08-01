@@ -5,7 +5,7 @@
         src="http://likede2-admin.itheima.net/img/logo.595745bd.png"
         alt=""
         class="BackgroundImage"
-      >
+      />
       <el-form ref="form" :model="form" label-width="80px" :rules="rules">
         <!-- 用户名框 -->
         <el-form-item label-width="0px" prop="name">
@@ -25,7 +25,11 @@
           />
         </el-form-item>
         <!-- 验证码框 -->
-        <el-form-item label-width="0px" class="yz-form-item" prop="checkingInput">
+        <el-form-item
+          label-width="0px"
+          class="yz-form-item"
+          prop="checkingInput"
+        >
           <el-input
             v-model="form.checkingInput"
             placeholder="请输入验证码"
@@ -33,7 +37,7 @@
             class="yzInput"
           />
         </el-form-item>
-        <img src="https://likede2-java.itheima.net/api/user-service/user/imageCode/z7BnTlT3GCbXl1imL8zT3qLKJd1EmoX4" alt="" class="yzImg">
+        <img :src="imgUrl" alt="" class="yzImg" @click="imgClick" />
         <el-form-item label-width="0px">
           <el-button type="primary" @click="onSubmit">登录</el-button>
         </el-form-item>
@@ -43,38 +47,72 @@
 </template>
 
 <script>
+import { getVerificationCode } from "@/api/user";
+import { mapState } from "vuex";
 export default {
-  name: 'Login',
+  name: "Login",
   data() {
     return {
       form: {
-        name: 'admin',
-        passwordInput: '',
-        checkingInput: ''
+        name: "admin",
+        passwordInput: "admin",
+        checkingInput: "",
       },
-
       rules: {
         name: [
-          { required: true, message: '请输入用户名', trigger: 'blur' },
-          { min: 3, max: 6, message: '长度在 3 到 6 个字符', trigger: 'blur' }
+          { required: true, message: "请输入用户名", trigger: "blur" },
+          { min: 3, max: 6, message: "长度在 3 到 6 个字符", trigger: "blur" },
         ],
         passwordInput: [
-          { required: true, message: '请输入密码', trigger: 'blur' },
-          { min: 6, max: 15, message: '长度在 6 到 15 个字符', trigger: 'blur' }
+          { required: true, message: "请输入密码", trigger: "blur" },
         ],
-        checkingInput: [{ required: true, message: '请输入活动名称', trigger: 'blur' },
-          { min: 3, max: 5, message: '长度在 3 到 5 个字符', trigger: 'blur' }
-        ]
-
-      }
-    }
+        checkingInput: [
+          { required: true, message: "请输入验证码", trigger: "blur" },
+        ],
+      },
+      clientToken: new Date().getTime(), // 验证码随机数
+      imgUrl: "",
+    };
+  },
+  computed: {
+    ...mapState("user", ["userLogin"]),
   },
   methods: {
     onSubmit() {
-      console.log('submit!')
-    }
-  }
-}
+      this.$refs.form.validate((a) => {
+        if (a) {
+          this.$store.dispatch("user/getUserLogin", {
+            loginName: this.form.name,
+            password: this.form.passwordInput,
+            clientToken: this.clientToken,
+            code: this.form.checkingInput,
+            loginType: 0,
+          });
+        }
+      });
+    },
+    async getVerificationCode() {
+      try {
+        const { data } = await getVerificationCode(this.clientToken);
+        this.imgUrl = window.URL.createObjectURL(data);
+        // console.log(this.imgUrl);
+      } catch (error) {
+        console.log(error);
+      }
+    },
+    imgClick() {
+      this.getVerificationCode()
+    },
+  },
+  created() {
+    this.getVerificationCode();
+  },
+  watch: {
+    userLogin() {
+      //
+    },
+  },
+};
 </script>
 
 <style lang="scss" scoped>
@@ -105,28 +143,28 @@ export default {
       left: 50%;
       margin-left: -48px;
     }
-    .yzInput{
+    .yzInput {
       width: 318px;
     }
-    .yzImg{
+    .yzImg {
       position: absolute;
       bottom: 113px;
       right: 35px;
     }
-    ::v-deep .yz-form-item{
-      height:52px ;
+    ::v-deep .yz-form-item {
+      height: 52px;
     }
-    .el-button{
+    .el-button {
       width: 100%;
       height: 52px;
-      background: linear-gradient(262deg,#2e50e1,#6878f0);
+      background: linear-gradient(262deg, #2e50e1, #6878f0);
     }
-    ::v-deep .el-input__icon{
+    ::v-deep .el-input__icon {
       font-size: 16px;
     }
   }
-  ::v-deep .el-input__inner{
-      height: 52px ;
-    }
+  ::v-deep .el-input__inner {
+    height: 52px;
+  }
 }
 </style>
