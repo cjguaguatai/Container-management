@@ -22,3 +22,9 @@ export const getVerificationCode = (clientToken) =>
     url: `/api/user-service/user/imageCode/${clientToken}`,
     responseType: "blob",
   });
+
+export const getUserInfo = (id) => {
+  return request ({
+    url:'/api/user-service/user/'+id
+  })
+}

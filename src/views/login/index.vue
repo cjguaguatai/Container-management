@@ -2,7 +2,7 @@
   <div class="login-container">
     <div class="login-from">
       <img
-        src="http://likede2-admin.itheima.net/img/logo.595745bd.png"
+        src="../../assets/logo.595745bd.png"
         alt=""
         class="BackgroundImage"
       />
@@ -78,22 +78,27 @@ export default {
     ...mapState("user", ["userLogin"]),
   },
   methods: {
-    onSubmit() {
-      this.$refs.form.validate((a) => {
+    // 登录
+     onSubmit() {
+      this.$refs.form.validate(async(a) => {
         if (a) {
-          this.$store.dispatch("user/getUserLogin", {
+          await this.$store.dispatch("user/getToken", {
             loginName: this.form.name,
             password: this.form.passwordInput,
             clientToken: this.clientToken,
             code: this.form.checkingInput,
             loginType: 0,
           });
+          this.$message.success("登陆成功");
+          this.$router.push("/");
         }
       });
     },
+    // 获取验证码
     async getVerificationCode() {
       try {
-        const { data } = await getVerificationCode(this.clientToken);
+        const {data} = await getVerificationCode(this.clientToken);
+        // console.log(res);
         this.imgUrl = window.URL.createObjectURL(data);
         // console.log(this.imgUrl);
       } catch (error) {
@@ -101,23 +106,18 @@ export default {
       }
     },
     imgClick() {
-      this.getVerificationCode()
+      this.getVerificationCode();
     },
   },
   created() {
     this.getVerificationCode();
-  },
-  watch: {
-    userLogin() {
-      //
-    },
   },
 };
 </script>
 
 <style lang="scss" scoped>
 .login-container {
-  background-image: url("http://likede2-admin.itheima.net/img/background.be4fae7d.png");
+  background-image: url("../../assets/background.be4fae7d.png");
   width: 100%;
   height: 100%;
   background-repeat: no-repeat;
