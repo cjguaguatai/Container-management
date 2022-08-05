@@ -3,20 +3,27 @@
     <span
       ><slot />:
       <el-input
-        v-model="input"
+        v-model="value.taskCode"
         size="medium"
+        clearable
         placeholder="请输入内容"
       ></el-input
     ></span>
+    <!-- @input="$emit('update:value', value)" -->
   </div>
 </template>
 
 <script>
 export default {
   data() {
-    return {
-      input: "",
-    };
+    return {};
+  },
+
+  props: {
+    value: {
+      type: Object,
+      required: true,
+    },
   },
 
   created() {},

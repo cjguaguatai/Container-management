@@ -4,9 +4,10 @@ import request from "@/utils/request";
  * 工单搜索
  * @returns
  */
-export const getTaskSearchList = () => {
+export const getTaskSearchList = (params) => {
   return request({
     url: "/api/task-service/task/search",
+    params,
   });
 };
 

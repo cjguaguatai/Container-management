@@ -7,6 +7,7 @@
       filterable
       size="medium"
       placeholder="请选择"
+      @change="$emit('select', value)"
     >
       <el-option
         v-for="item in options"
@@ -30,7 +31,6 @@ export default {
     options: {
       type: Array,
       required: true,
-      
     },
   },
   created() {},

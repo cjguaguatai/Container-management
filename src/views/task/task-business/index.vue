@@ -2,13 +2,16 @@
   <div>
     <!-- 头部 -->
     <el-card class="box-card" body-style="display: flex">
-      <searchInput>工单编号</searchInput>
-      <searchSelect :options="allTaskStatus">工单状态</searchSelect>
+      <searchInput :value="searchData">工单编号</searchInput>
+      <searchSelect :options="allTaskStatus" @select="changeSelect"
+        >工单状态</searchSelect
+      >
       <el-button
         type="primary"
-        size="small "
+        size="medium "
         icon="el-icon-search"
         class="searchBtn"
+        @click="searchFn"
         >搜索</el-button
       >
     </el-card>
@@ -18,86 +21,25 @@
       <div class="edit">
         <el-button
           type="primary"
-          size="small"
+          size="medium"
           icon="el-icon-circle-plus-outline"
           class="addBtn"
+          @click="addFormShow = true"
           >新建</el-button
-        ><el-button type="primary" size="small" class="configureBtn"
+        ><el-button type="primary" size="medium" class="configureBtn"
           >工单配置</el-button
         >
       </div>
-      <el-table
-        ref="singleTable"
-        :data="tableData"
-        highlight-current-row
-        @current-change="handleCurrentChange"
-        style="width: 100%"
-      >
-        <el-table-column
-          type="index"
-          width="50"
-          label="序号"
-          label-class-name="bgc"
-        >
-        </el-table-column>
-        <el-table-column
-          property="taskCode"
-          label="工单编号"
-          label-class-name="bgc"
-        >
-        </el-table-column>
-        <el-table-column
-          property="innerCode"
-          label="设备编号"
-          label-class-name="bgc"
-        >
-        </el-table-column>
-        <el-table-column
-          property="taskType"
-          label="工单类型"
-          label-class-name="bgc"
-        >
-        </el-table-column>
-        <el-table-column
-          property="createType"
-          label="工单方式"
-          label-class-name="bgc"
-        >
-        </el-table-column>
-        <el-table-column
-          property="taskStatus"
-          label="工单状态"
-          label-class-name="bgc"
-        >
-        </el-table-column>
-        <el-table-column
-          property="userName"
-          label="运营人员"
-          label-class-name="bgc"
-        >
-        </el-table-column>
-        <el-table-column
-          property="createTime"
-          label="创建日期"
-          label-class-name="bgc"
-        >
-        </el-table-column>
-        <el-table-column
-          fixed="right"
-          label="操作"
-          width="100"
-          label-class-name="bgc"
-        >
-          <template slot-scope="scope">
-            <el-button @click="handleClick(scope.row)" type="text" size="small"
-              >查看详情</el-button
-            >
-          </template>
-        </el-table-column>
-      </el-table>
+      <!-- table -->
+      <task-table :tableData="tableData" />
       <!-- footer -->
-      <footerCase :pageIndex='SearchObj.pageIndex' :totalPage='SearchObj.totalPage' :totalCount='SearchObj.totalCount'/>
+      <footerCase
+        :SearchObj="SearchObj"
+        @addPageIndex="addPageIndex"
+        @lastPageIndex="lastPageIndex"
+      />
     </el-card>
+    <task-dialog :show='addFormShow'>12345678</task-dialog>
   </div>
 </template>
 
@@ -105,6 +47,8 @@
 import searchInput from "@/components/searchInput";
 import searchSelect from "@/components/searchSelect";
 import footerCase from "@/components/footerCase";
+import TaskTable from "../components/task_table.vue";
+import TaskDialog from "../components/task_dialog.vue";
 import { getAllTaskStatus, getTaskSearchList } from "@/api/task";
 import dayjs from "dayjs";
 export default {
@@ -112,26 +56,41 @@ export default {
   data() {
     return {
       tableData: [],
-      currentRow: null,
+      // currentRow: null,
       allTaskStatus: [], //工单状态列表
       SearchObj: {}, //工单搜索返回的全部内容
+      // 根据搜索框搜索
+      searchData: {
+        pageIndex: "1",
+        taskCode: "",
+        status: "",
+      },
+      addFormShow: false, // 新增表单显隐
     };
   },
 
   created() {
     this.getAllTaskStatus();
-    this.getTaskSearchList();
+    this.getTaskSearchList(this.searchData);
   },
 
   methods: {
-    setCurrent(row) {
-      this.$refs.singleTable.setCurrentRow(row);
-    },
-    handleCurrentChange(val) {
-      this.currentRow = val;
-    },
-    handleClick(row) {
-      console.log(row);
+    // 工单搜索
+    async getTaskSearchList(obj) {
+      try {
+        const { data } = await getTaskSearchList(obj);
+        this.SearchObj = data;
+        if (data.currentPageRecords.length === 0) {
+          this.tableData = [];
+          this.SearchObj.pageIndex = 0;
+          return;
+        }
+        this.pageIndex = data.pageIndex;
+        // 更改数据
+        this.changeTableData(data.currentPageRecords);
+      } catch (error) {
+        console.log(error);
+      }
     },
     // 获取工单状态列表
     async getAllTaskStatus() {
@@ -142,26 +101,11 @@ export default {
         console.log(error);
       }
     },
-    // 工单搜索
-    async getTaskSearchList() {
-      try {
-        const { data } = await getTaskSearchList();
-        // 更改数据
-        this.SearchObj = data;
-        this.changeTableData(data.currentPageRecords);
-      } catch (error) {
-        console.log(error);
-      }
-    },
+
     // 更改数据
     changeTableData(arr) {
-      // console.log(this.tableData);
       let arr1 = arr;
-      arr1.forEach((ele) => {
-        // console.log(ele);
-        if (ele.taskType.typeId === 2) {
-          ele.taskType = "补货工单";
-        }
+      arr1.forEach((ele, index) => {
         if (ele.createType === 0) {
           ele.createType = "自动";
         } else {
@@ -176,16 +120,32 @@ export default {
         } else {
           ele.taskStatus = "完成";
         }
-
+        ele.id = (this.pageIndex - 1) * 10 + index + 1;
         dayjs(ele.createTime);
         ele.createTime = dayjs().format("YYYY.MM.DD HH.mm.ss");
-        // console.log(ele.updateTime);
-        // console.log(ele);
         this.tableData = arr1;
       });
     },
+    // 下一页
+    addPageIndex() {
+      this.searchData.pageIndex++;
+      this.getTaskSearchList(this.searchData);
+    },
+    // 上一页
+    lastPageIndex() {
+      this.searchData.pageIndex--;
+      this.getTaskSearchList(this.searchData);
+    },
+    // 工作状态改变
+    changeSelect(val) {
+      this.searchData.status = val;
+    },
+    searchFn() {
+      this.searchData.pageIndex = "1";
+      this.getTaskSearchList(this.searchData);
+    },
   },
-  components: { searchInput, searchSelect, footerCase },
+  components: { searchInput, searchSelect, footerCase, TaskTable, TaskDialog },
 };
 </script>
 
@@ -207,8 +167,5 @@ export default {
 }
 .edit {
   margin-bottom: 20px;
-}
-::v-deep .bgc {
-  background: rgb(243, 246, 251) !important;
 }
 </style>
